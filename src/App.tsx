@@ -1,11 +1,3 @@
-/**
- * App.tsx
- * Advanced Virtualized, Editable, Accessible Data Grid
- *
- * Tech: React 18+ | TypeScript (strict) | Tailwind CSS utility classes
- * No forbidden libraries — all virtualization, sorting, editing, keyboard nav, and ARIA built from scratch.
- */
-
 "use client";
 
 import React, {
@@ -18,17 +10,11 @@ import React, {
   type KeyboardEvent,
   type MouseEvent,
   type DragEvent,
-  type FocusEvent,
   type ChangeEvent,
 } from "react";
 
-// ═══════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════
-
 type Align = "left" | "right";
 type SortDir = "asc" | "desc";
-type RowKey = string | number;
 
 interface ColumnDef {
   key: string;
@@ -52,7 +38,7 @@ interface Row {
   status: Status;
   performance: number;
   email: string;
-  [key: string]: unknown; // index signature for dynamic access
+  [key: string]: unknown;
 }
 
 type Status = "Active" | "On Leave" | "Remote" | "Hybrid" | "Probation";
@@ -89,10 +75,6 @@ interface VisibleScrollResult {
   offsetLeft: number;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CONSTANTS & COLUMN SCHEMA
-// ═══════════════════════════════════════════════════════════════
-
 const COLUMN_DEFS: ColumnDef[] = [
   { key: "id", label: "ID", width: 70, pinned: true, sortable: true, editable: false, align: "right" },
   { key: "name", label: "Name", width: 180, pinned: true, sortable: true, editable: true, align: "left" },
@@ -125,10 +107,6 @@ const HEADER_HEIGHT = 38;
 const OVERSCAN = 12;
 const TOTAL_ROWS = 50000;
 
-// ═══════════════════════════════════════════════════════════════
-// DATA GENERATION
-// ═══════════════════════════════════════════════════════════════
-
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -157,13 +135,7 @@ function generateData(count: number = TOTAL_ROWS): Row[] {
   }
   return data;
 }
-
-// Singleton — generated once at module load
 const INITIAL_DATA: Row[] = generateData();
-
-// ═══════════════════════════════════════════════════════════════
-// ASYNC VALIDATION (mocked)
-// ═══════════════════════════════════════════════════════════════
 
 function validateField(key: string, value: string): Promise<ValidationResult> {
   return new Promise<ValidationResult>((resolve) => {
@@ -194,17 +166,13 @@ function validateField(key: string, value: string): Promise<ValidationResult> {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MULTI-SORT
-// ═══════════════════════════════════════════════════════════════
-
 function multiSort(data: Row[], sorts: SortEntry[]): Row[] {
   if (sorts.length === 0) return data;
 
   return [...data].sort((a: Row, b: Row): number => {
     for (const { key, dir } of sorts) {
-      const av = a[key];
-      const bv = b[key];
+      const av = a[key] as string | number;
+      const bv = b[key] as string | number;
       let cmp = 0;
       if (av < bv) cmp = -1;
       else if (av > bv) cmp = 1;
@@ -214,10 +182,6 @@ function multiSort(data: Row[], sorts: SortEntry[]): Row[] {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// STATUS BADGE COLORS
-// ═══════════════════════════════════════════════════════════════
-
 const STATUS_STYLES: Record<Status, { bg: string; }> = {
   "Active": { bg: "#166534" },
   "On Leave": { bg: "#854d0e" },
@@ -226,11 +190,6 @@ const STATUS_STYLES: Record<Status, { bg: string; }> = {
   "Probation": { bg: "#991b1b" },
 };
 
-// ═══════════════════════════════════════════════════════════════
-// SUB-COMPONENTS
-// ═══════════════════════════════════════════════════════════════
-
-// ── Header Cell ──
 interface HeaderCellProps {
   col: ColumnDef;
   isPinned: boolean;
@@ -308,13 +267,12 @@ const HeaderCell: FC<HeaderCellProps> = ({
       )}
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{col.label}</span>
 
-      {/* Resize handle */}
+
       <ResizeHandle onMouseDown={(e: MouseEvent<HTMLDivElement>) => onResizeStart(e, col.key)} />
     </div>
   );
 };
 
-// ── Resize Handle ──
 interface ResizeHandleProps {
   onMouseDown: (e: MouseEvent<HTMLDivElement>) => void;
 }
@@ -340,7 +298,6 @@ const ResizeHandle: FC<ResizeHandleProps> = ({ onMouseDown }) => {
   );
 };
 
-// ── Grid Cell ──
 interface GridCellProps {
   row: Row;
   rowIdx: number;
@@ -430,7 +387,6 @@ const GridCell: FC<GridCellProps> = ({
   );
 };
 
-// ── Edit Input ──
 interface EditInputProps {
   editValue: string;
   editError: string | null;
@@ -490,7 +446,6 @@ const EditInput: FC<EditInputProps> = ({
   </div>
 );
 
-// ── Status Badge ──
 interface StatusBadgeProps {
   status: Status;
 }
@@ -509,7 +464,6 @@ const StatusBadge: FC<StatusBadgeProps> = ({ status }) => (
   </span>
 );
 
-// ── Column Menu ──
 interface ColumnMenuProps {
   columns: ColumnDef[];
   hiddenColumns: Set<string>;
@@ -520,7 +474,7 @@ interface ColumnMenuProps {
 const ColumnMenu: FC<ColumnMenuProps> = ({ columns, hiddenColumns, onToggle, onClose }) => {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
-  // Close on outside click
+
   useEffect(() => {
     const handler = () => onClose();
     const timer = setTimeout(() => window.addEventListener("click", handler), 0);
@@ -566,12 +520,8 @@ const ColumnMenu: FC<ColumnMenuProps> = ({ columns, hiddenColumns, onToggle, onC
   );
 };
 
-// ═══════════════════════════════════════════════════════════════
-// MAIN App COMPONENT
-// ═══════════════════════════════════════════════════════════════
+const DataGrid: FC = () => {
 
-const App: FC = () => {
-  // ── State ──
   const [data, setData] = useState<Row[]>(INITIAL_DATA);
   const [columns, setColumns] = useState<ColumnDef[]>(COLUMN_DEFS);
   const [sorts, setSorts] = useState<SortEntry[]>([]);
@@ -594,15 +544,15 @@ const App: FC = () => {
   const [dragTarget, setDragTarget] = useState<string | null>(null);
   const [showColumnMenu, setShowColumnMenu] = useState<boolean>(false);
 
-  // ── Refs ──
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const editInputRef = useRef<HTMLInputElement | null>(null);
 
-  // ── Derived: sorted data ──
+
   const sortedData: Row[] = useMemo(() => multiSort(data, sorts), [data, sorts]);
 
-  // ── Derived: visible columns ──
+
   const visibleCols: ColumnDef[] = useMemo(() => {
     return columnOrder
       .filter((k: string) => !hiddenColumns.has(k))
@@ -628,14 +578,14 @@ const App: FC = () => {
     [scrollableCols]
   );
 
-  // ── Derived: row virtualization ──
+
   const totalRows: number = sortedData.length;
   const visibleRowCount: number = Math.ceil(containerHeight / ROW_HEIGHT) + OVERSCAN * 2;
   const startRowIdx: number = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
   const endRowIdx: number = Math.min(totalRows, startRowIdx + visibleRowCount);
   const visibleRows: Row[] = sortedData.slice(startRowIdx, endRowIdx);
 
-  // ── Derived: column virtualization (scrollable only) ──
+
   const scrollableVisArea: number = containerWidth - pinnedWidth;
   const visibleScrollCols: VisibleScrollResult = useMemo((): VisibleScrollResult => {
     let accum = 0;
@@ -661,7 +611,7 @@ const App: FC = () => {
     return { cols: scrollableCols.slice(startIdx, endIdx), startIdx, offsetLeft: accum };
   }, [scrollableCols, scrollLeft, scrollableVisArea]);
 
-  // ── Derived: left-offset maps ──
+
   const pinnedOffsets: Record<string, number> = useMemo(() => {
     const map: Record<string, number> = {};
     let offset = 0;
@@ -682,7 +632,7 @@ const App: FC = () => {
     return map;
   }, [scrollableCols, pinnedWidth]);
 
-  // ── ResizeObserver ──
+
   useEffect(() => {
     const el: HTMLDivElement | null = containerRef.current;
     if (!el) return;
@@ -697,14 +647,14 @@ const App: FC = () => {
     return () => obs.disconnect();
   }, []);
 
-  // ── Scroll handler ──
+
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>): void => {
     const target: HTMLDivElement = e.currentTarget;
     setScrollTop(target.scrollTop);
     setScrollLeft(target.scrollLeft);
   }, []);
 
-  // ── Sort ──
+
   const handleSort = useCallback((key: string): void => {
     setSorts((prev: SortEntry[]) => {
       const idx: number = prev.findIndex((s: SortEntry) => s.key === key);
@@ -720,7 +670,7 @@ const App: FC = () => {
     return { dir: sorts[idx].dir, priority: idx + 1 };
   }, [sorts]);
 
-  // ── Column resize ──
+
   const handleResizeStart = useCallback((e: MouseEvent<HTMLDivElement>, key: string): void => {
     e.preventDefault();
     e.stopPropagation();
@@ -747,7 +697,7 @@ const App: FC = () => {
     window.addEventListener("mouseup", onUp);
   }, [columns]);
 
-  // ── Column drag reorder ──
+
   const handleDragStart = useCallback((e: DragEvent<HTMLDivElement>, key: string): void => {
     setDragSource(key);
     e.dataTransfer.effectAllowed = "move";
@@ -782,7 +732,7 @@ const App: FC = () => {
     setDragTarget(null);
   }, []);
 
-  // ── Editing ──
+
   const startEdit = useCallback((rowIdx: number, key: string): void => {
     const col: ColumnDef | undefined = columns.find((c: ColumnDef) => c.key === key);
     if (!col || !col.editable) return;
@@ -814,10 +764,10 @@ const App: FC = () => {
     const oldValue: unknown = sortedData[rowIdx][key];
     const rowId: number = sortedData[rowIdx].id;
 
-    // Push to undo stack (cap at 50)
+
     setUndoStack((prev: UndoEntry[]) => [...prev.slice(-50), { rowId, key, oldValue }]);
 
-    // Apply edit
+
     setData((prev: Row[]) =>
       prev.map((row: Row) => {
         if (row.id !== rowId) return row;
@@ -836,7 +786,7 @@ const App: FC = () => {
     setEditError(null);
   }, []);
 
-  // ── Undo ──
+
   const handleUndo = useCallback((): void => {
     if (!undoStack.length) return;
     const { rowId, key, oldValue } = undoStack[undoStack.length - 1];
@@ -847,9 +797,9 @@ const App: FC = () => {
     setUndoStack((prev: UndoEntry[]) => prev.slice(0, -1));
   }, [undoStack]);
 
-  // ── Keyboard navigation ──
+
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
-    // If editing, only handle Enter / Escape
+
     if (editCell) {
       if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
       else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
@@ -885,7 +835,7 @@ const App: FC = () => {
 
     setFocusCell({ row: nr, col: nc });
 
-    // Scroll focused row into view
+
     if (scrollRef.current) {
       const targetTop: number = nr * ROW_HEIGHT;
       if (targetTop < scrollRef.current.scrollTop) {
@@ -896,7 +846,7 @@ const App: FC = () => {
     }
   }, [editCell, focusCell, visibleCols, sortedData, containerHeight, commitEdit, cancelEdit, startEdit, handleUndo]);
 
-  // ── Column visibility ──
+
   const toggleColumn = useCallback((key: string): void => {
     setHiddenColumns((prev: Set<string>) => {
       const next: Set<string> = new Set(prev);
@@ -905,9 +855,9 @@ const App: FC = () => {
     });
   }, []);
 
-  // ─────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────
+
+
+
   return (
     <div
       onKeyDown={handleKeyDown}
@@ -919,21 +869,21 @@ const App: FC = () => {
         color: "#d1cde6",
       }}
     >
-      {/* ── TOOLBAR ── */}
+
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
         padding: "10px 16px", background: "#1e1b2e",
         borderBottom: "1px solid #2e2b3f", flexShrink: 0, position: "relative",
       }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>
-          <span style={{ color: "#6366f1" }}>⊞</span> Data Grid
+          <span style={{ color: "#6366f1" }}>⊞</span> DataGrid
         </div>
         <div style={{ fontSize: 12, color: "#6b6880", marginLeft: 4 }}>
           {totalRows.toLocaleString()} rows · {visibleCols.length} columns
         </div>
         <div style={{ flex: 1 }} />
 
-        {/* Active sort pills */}
+
         {sorts.length > 0 && (
           <div style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -976,7 +926,7 @@ const App: FC = () => {
           }}
         >↩ Undo</button>
 
-        {/* Column visibility menu */}
+
         {showColumnMenu && (
           <ColumnMenu
             columns={columns}
@@ -987,15 +937,15 @@ const App: FC = () => {
         )}
       </div>
 
-      {/* ── GRID CONTAINER ── */}
+
       <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden", minHeight: 0 }}>
 
-        {/* Sticky header row */}
+
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0,
           height: HEADER_HEIGHT, zIndex: 15, display: "flex", overflow: "hidden",
         }}>
-          {/* Pinned headers */}
+
           <div style={{ position: "relative", width: pinnedWidth, flexShrink: 0, height: HEADER_HEIGHT }}>
             {pinnedCols.map((c: ColumnDef) => (
               <HeaderCell
@@ -1015,7 +965,7 @@ const App: FC = () => {
               />
             ))}
           </div>
-          {/* Scrollable headers (virtualized) */}
+
           <div style={{ flex: 1, overflow: "hidden", position: "relative", height: HEADER_HEIGHT }}>
             {visibleScrollCols.cols.map((c: ColumnDef) => (
               <HeaderCell
@@ -1037,7 +987,7 @@ const App: FC = () => {
           </div>
         </div>
 
-        {/* Scrollable body */}
+
         <div
           ref={scrollRef}
           onScroll={handleScroll}
@@ -1051,7 +1001,7 @@ const App: FC = () => {
             overflowX: "auto", overflowY: "auto",
           }}
         >
-          {/* Pinned columns (sticky left) */}
+
           <div style={{ position: "sticky", left: 0, zIndex: 10, display: "inline-block", width: pinnedWidth, verticalAlign: "top" }}>
             <div style={{ position: "relative", width: pinnedWidth, height: totalRows * ROW_HEIGHT }}>
               {visibleRows.map((row: Row, i: number) => {
@@ -1091,7 +1041,7 @@ const App: FC = () => {
             </div>
           </div>
 
-          {/* Scrollable columns */}
+
           <div style={{ display: "inline-block", width: scrollableWidth, verticalAlign: "top", position: "relative" }}>
             <div style={{ position: "relative", width: scrollableWidth, height: totalRows * ROW_HEIGHT }}>
               {visibleRows.map((row: Row, i: number) => {
@@ -1133,7 +1083,7 @@ const App: FC = () => {
         </div>
       </div>
 
-      {/* ── STATUS BAR ── */}
+
       <div style={{
         height: 26, background: "#1e1b2e", borderTop: "1px solid #2e2b3f",
         display: "flex", alignItems: "center", gap: 16, paddingLeft: 16,
@@ -1149,4 +1099,4 @@ const App: FC = () => {
   );
 };
 
-export default App;
+export default DataGrid;
